@@ -24,6 +24,16 @@ for a in /Volumes/*; do
     fi
 done
 
+if [ -z "$DEST" ]; then
+    echo "destination volume not found" 1>&2
+    exit 1
+fi
+if [ -z "$MEMCARD" ]; then
+    echo "no memory card found" 1>&2
+    exit 1
+fi
+
+
 echo "Create $DEST"
 mkdir "$DEST" || { echo "mkdir $DEST failed" 1>&2; exit 1; }
 

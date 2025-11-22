@@ -10,7 +10,6 @@ AtomicWrite <- function(s, file) {
 }
 
 MIN.RUN <- 8 # at least MIN.RUN files for a stack
-OUT  <- "~/tmp/link.sh"
 
 LINK.SCRIPT <- '
 if [ -e "${PENDDIR}" ]; then
@@ -23,8 +22,6 @@ fi
 
 INCDIR <- Sys.getenv("INCDIR")
 DESTDIR <- Sys.getenv("DESTDIR")
-
-CMDS <- ""
 
 if (INCDIR == "" || DESTDIR == "") {
     stop("unset INCDIR or DESTDIR env variables. I=\"", INCDIR,"\" D=\"",DESTDIR,"\"")
@@ -39,6 +36,13 @@ if (length(files) == 0) {
 for (f in files) {
     in.dir <- paste0(INCDIR, "/", f)
     inf <- paste0(in.dir, "/meta.csv")
+    outf <- paste0(in.dir, "/link.sh")
+
+    if ( file.exists(outf) ) {
+        warning("link file allready exists ", outf)
+        next
+    }
+
     cat("\n", inf, "\n")
 
     if ( ! file.exists(inf) ) {
@@ -82,7 +86,7 @@ for (f in files) {
     ## sort by sn then cdate.
     meta  <- ( meta
         %>% group_by(SerialNumber)
-        %>% arrange(cdate, .by_group = TRUE)
+        %>% arrange(cdate, SourceFile, .by_group = TRUE)
     )
 
 
@@ -147,15 +151,14 @@ for (f in files) {
     cat(paste(format(ss$n, width=10), ss$stack, ss$penddir, collapse="\n"),"\n\n")
 
     if (nrow(out) != n.read) {
-        stop("row output missmatch", n.read,"read", nrow(out),"output")
+        stop("row output missmatch", n.read,"read", nrow(out), "output")
     }
 
-    CMDS <- paste0(CMDS
-                 , "##\n## ", INCDIR, "/", f, "\n##\n"
+    CMDS <- paste0("##\n## ", INCDIR, "/", f, "\n##\n"
                  , paste0(ss$script, collapse="\n")
                    )
 
+    AtomicWrite(CMDS, outf)
+    cat("Wrote ", outf, "\n")
 }
 
-AtomicWrite(CMDS, OUT)
-cat("Wrote ", OUT,"\n")
